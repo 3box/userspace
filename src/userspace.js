@@ -17,7 +17,6 @@ class UserSpace {
    */
   constructor (muDID, opts = {}) {
     this.muDID = muDID
-    MuPort.resolveIdentityDocument(muDID.getDid()).then(console.log)
   }
 
   static async open (address) {
@@ -104,8 +103,8 @@ function request (url, method, payload) {
     }
     request.open(method, url)
     request.setRequestHeader('accept', 'application/json')
-    request.setRequestHeader('Content-Type', `application/json`)
     if (method === 'POST') {
+      request.setRequestHeader('Content-Type', `application/json`)
       request.send(payload)
     } else {
       request.setRequestHeader('Authorization', `Bearer ${payload}`)
