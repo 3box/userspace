@@ -79134,7 +79134,7 @@ const bip39 = require('bip39')
 const store = require('store')
 const XMLHttpRequest = (typeof window !== 'undefined') ? window.XMLHttpRequest : require('xmlhttprequest').XMLHttpRequest
 
-const CALEUCHE_URL = 'https://api.uport.space/caleuche/v1/event'
+const CALEUCHE_URL = 'https://api.uport.space/caleuche/v1/event/'
 
 class UserSpace {
 
@@ -79152,17 +79152,20 @@ class UserSpace {
 
   static async open (address) {
     console.log(address)
-    let mnemonic = store.get('muDID_' + address)
-    if (!mnemonic) {
+    let muDID
+    let serializedMuDID = store.get('serializedMuDID_' + address)
+    if (serializedMuDID) {
+      muDID = new MuPort(serializedMuDID)
+    } else {
       const entropy = (await authUser(address)).slice(2, 34)
-      mnemonic = bip39.entropyToMnemonic(entropy)
-      store.set('muDID_' + address, mnemonic)
+      const mnemonic = bip39.entropyToMnemonic(entropy)
+      const opts = {
+        externalMgmtKey: address,
+        mnemonic
+      }
+      muDID = await MuPort.newIdentity({name:"asdf"}, null, opts)
+      store.set('serializedMuDID_' + address, muDID.serializeState())
     }
-    const opts = {
-      externalMgmtKey: address,
-      mnemonic
-    }
-    let muDID = await MuPort.newIdentity({name: 'test'}, null, opts)
     console.log(muDID.getDid())
     return new UserSpace(muDID)
   }
@@ -79187,8 +79190,9 @@ class UserSpace {
     console.log(event_token)
     //const ver = await this.muDID.verifyJWT(event_token)
     //console.log(ver)
-    await request(CALEUCHE_URL, 'POST', {event_token: 'asdfasdf'})
-    //await request(CALEUCHE_URL, 'POST', {event_token})
+    //await request(CALEUCHE_URL, 'POST', {event_token: 'asdfasdf'})
+    await request(CALEUCHE_URL, 'POST', {event_token})
+    //await request(CALEUCHE_URL, 'GET', {event_token})
   }
 
   async removeItem (itemId) {
@@ -79215,15 +79219,17 @@ function authUser (from) {
 }
 
 function request (url, method, payload) {
-  const request = new XMLHttpRequest()
+    console.log(url)
   return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest()
     request.onreadystatechange = () => {
-      if (request.readyState === 4 && request.timeout !== 1) {
         console.log(request)
+      if (request.readyState === 4 && request.timeout !== 1) {
         if (request.status !== 200) {
-          reject(`[userspace] status ${request.status}: ${request.responseText}`)
+          //console.log(request)
+          //reject(`[userspace] status ${request.status}: ${request.responseText}`)
         } else {
-          console.log(request)
+          //console.log(request)
           //try {
             //resolve(JSON.parse(request.responseText))
           //} catch (jsonError) {
@@ -79233,10 +79239,12 @@ function request (url, method, payload) {
       }
     }
     request.open(method, url)
-    request.setRequestHeader('accept', 'application/json')
+    //request.setRequestHeader('accept', 'application/json')
+    request.setRequestHeader('accept', '*/*')
     if (method === 'POST') {
       request.setRequestHeader('Content-Type', `application/json`)
-      request.send(payload)
+      request.send(JSON.stringify(payload))
+      //request.send(payload)
     } else {
       request.setRequestHeader('Authorization', `Bearer ${payload}`)
       request.send()
