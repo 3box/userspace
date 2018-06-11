@@ -88,35 +88,38 @@ function authUser (from) {
 }
 
 function request (url, method, payload) {
-    console.log(url)
-  return new Promise((resolve, reject) => {
-    const request = new XMLHttpRequest()
-    request.onreadystatechange = () => {
-        console.log(request)
-      if (request.readyState === 4 && request.timeout !== 1) {
-        if (request.status !== 200) {
-          //console.log(request)
-          //reject(`[userspace] status ${request.status}: ${request.responseText}`)
-        } else {
-          //console.log(request)
-          //try {
-            //resolve(JSON.parse(request.responseText))
-          //} catch (jsonError) {
-            //reject(`[userspace] while parsing data: '${String(request.responseText)}', error: ${String(jsonError)}`)
-          //}
-        }
-      }
+  console.log(url)
+  let config
+
+  if (method === 'POST') {
+    config = {
+      method,
+      mode: 'cors',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
     }
-    request.open(method, url)
-    //request.setRequestHeader('accept', 'application/json')
-    request.setRequestHeader('accept', '*/*')
-    if (method === 'POST') {
-      request.setRequestHeader('Content-Type', `application/json`)
-      request.send(JSON.stringify(payload))
-      //request.send(payload)
-    } else {
-      request.setRequestHeader('Authorization', `Bearer ${payload}`)
-      request.send()
+  } else {
+    config = {
+      method,
+      headers: {
+        'Authorization': `Bearer ${payload}`
+      },
+
+    }
+  }
+
+  return fetch(url, config)
+  .then(response => {
+    console.log('response.status', response.status)
+    if (response.status === 404 || response.status === 200) {
+      return response.json()
     }
   })
+  .catch(function(error) {
+    console.log('Request failed', error)
+  })
+
 }
