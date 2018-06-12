@@ -1,7 +1,7 @@
 {
   "name": "userspace",
   "version": "0.0.1",
-  "description": "Interact in the user space",
+  "description": "Interact with the user space",
   "main": "lib/usesrspace.js",
   "directories": {
     "lib": "lib"
@@ -10,18 +10,18 @@
     "test": "jest --coverage",
     "build": "babel src --out-dir lib",
     "build:dist": "browserify -s UserSpace ./src/userspace.js -o ./dist/userspace.js",
-    "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -d 2 src/muport.js >> README.md"
+    "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -d 2 src/userspace.js >> README.md"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/uport-project/muport-core-js.git"
+    "url": "git+https://github.com/uport-project/userspace-js.git"
   },
   "author": "",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/uport-project/muport-core-js/issues"
+    "url": "https://github.com/uport-project/userspace-js/issues"
   },
-  "homepage": "https://github.com/uport-project/muport-core-js#readme",
+  "homepage": "https://github.com/uport-project/userspace-js#readme",
   "dependencies": {
     "babel-runtime": "^6.26.0",
     "bip39": "^2.5.0",

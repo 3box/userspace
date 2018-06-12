@@ -23,6 +23,12 @@ class UserSpace {
     }
   }
 
+  /**
+   * Opens the user space associated with the given address
+   *
+   * @param     {String}    address                 an ethereum address
+   * @return    {UserSpace}                         the userspace instance for the given address
+   */
   static async open (address) {
     console.log('user', address)
     let muDID
@@ -44,21 +50,45 @@ class UserSpace {
     return userspace
   }
 
+  /**
+   * Get the value of the given key
+   *
+   * @param     {String}    key                     the key
+   * @return    {String}                            the value associated with the key
+   */
   async get (key) {
     await this.sync()
     return this.items[key]
   }
 
+  /**
+   * Get all of the items in the userspace
+   *
+   * @return    {Object}                            an object containing all items
+   */
   async getAll () {
     await this.sync()
     return this.items
   }
 
+  /**
+   * Set a value for the given key
+   *
+   * @param     {String}    key                     the key
+   * @param     {String}    value                   the value
+   * @return    {Boolean}                           true if successful
+   */
   async set (key, value) {
     await this.postEvent({ key, value })
     return true
   }
 
+  /**
+   * Remove the value for the given key
+   *
+   * @param     {String}    key                     the key
+   * @return    {Boolean}                           true if successful
+   */
   async remove (key) {
     await this.postEvent({ key, deleted: true })
     return true
