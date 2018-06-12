@@ -82,6 +82,10 @@ class UserSpace {
     }
   }
 
+  clearCache () {
+    store.remove('serializedMuDID_' + this.muDID.getDidDocument().managementKey)
+  }
+
   async postEvent (payload) {
     const encrypted = this.muDID.symEncrypt(JSON.stringify(payload))
     const event_token = await this.muDID.signJWT({

@@ -23,6 +23,8 @@
       <button id="removeItem">Remove</button>
       <br />
       <button id="showAll">Show all data in the hub</button>
+      <button id="clear">Clear cache</button>
+      <br>
       <br>
     </div>
     <span id="hubdata"></span>
@@ -60,6 +62,7 @@
             })
           })
         })
+        clear.addEventListener('click', () => userspace.clearCache())
       })
     })
   </script>
