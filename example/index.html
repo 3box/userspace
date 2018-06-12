@@ -9,13 +9,22 @@
   <body>
 
     <button id="bopen">Open UserSpace</button>
-    <button id="b1">Hej</button>
-    <button id="b2">Hi</button>
-    <button id="b3">你好</button>
-    <button id="b4">Hola</button>
-    <button id="read">Get data form hub</button>
-
-    <br>
+    <br />
+    <div id="controlls" style="display: none">
+      <input type="text" id="skey" placeholder="Key">
+      <input type="text" id="svalue" placeholder="Value">
+      <button id="setItem">Set</button>
+      <br />
+      <input type="text" id="gkey" placeholder="Key">
+      <input type="text" id="gvalue" placeholder="Value" disabled>
+      <button id="getItem">Get</button>
+      <br />
+      <input type="text" id="rkey" placeholder="Key">
+      <button id="removeItem">Remove</button>
+      <br />
+      <button id="showAll">Show all data in the hub</button>
+      <br>
+    </div>
     <span id="hubdata"></span>
 
 
@@ -24,25 +33,35 @@
   <script type="text/javascript">
     bopen.addEventListener('click', event => {
       UserSpace.open(web3.eth.accounts[0]).then(userspace => {
-        b1.addEventListener('click', () => userspace.addItem('Hej'))
-        b2.addEventListener('click', () => userspace.addItem('Hi'))
-        b3.addEventListener('click', () => userspace.addItem('你好'))
-        b4.addEventListener('click', () => userspace.addItem('Hola'))
-        read.addEventListener('click', () => {
-          userspace.getItems().then(console.log)
+        controlls.style.display = 'inline'
+        window.userspace = userspace
+        setItem.addEventListener('click', () => {
+          userspace.set(skey.value, svalue.value).then(() => {
+            skey.value = null
+            svalue.value = null
+          })
+        })
+        getItem.addEventListener('click', () => {
+          userspace.get(gkey.value).then(value => {
+            gvalue.value = value
+          })
+        })
+        removeItem.addEventListener('click', () => {
+          userspace.remove(rkey.value).then(() => {
+            rkey.value = null
+          })
+        })
+        showAll.addEventListener('click', () => {
           // TODO
+          userspace.getAll().then(items => {
+            hubdata.innerHTML = ''
+            Object.entries(items).map(item => {
+              hubdata.innerHTML += item[0] + ': ' + item[1] + '<br />'
+            })
+          })
         })
       })
-
     })
   </script>
 
-</html>
-
-<!doctype html>
-<html>
-<head>
-  <title>ENS Test</title>
-</head>
-<body></body>
 </html>

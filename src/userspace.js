@@ -10,17 +10,21 @@ class UserSpace {
   /**
    * Instantiates a user space
    *
-   * @param     {Object}    [opts]                  optional parameters
-   * @param     {Object}    opts.rpcProvider        an ethereum rpc provider
-   * @param     {Object}    opts.user               an instance of a muport identity
+   * @param     {MuPort}    muDID                   A MuPort DID instance
    * @return    {UserSpace}                         self
    */
   constructor (muDID, opts = {}) {
     this.muDID = muDID
+    this.previous = null
+    if (store.get(this.muDID.getDid())) {
+      this.items = JSON.parse(store.get(this.muDID.getDid()))
+    } else {
+      this.items = {}
+    }
   }
 
   static async open (address) {
-    console.log(address)
+    console.log('user', address)
     let muDID
     let serializedMuDID = store.get('serializedMuDID_' + address)
     if (serializedMuDID) {
@@ -28,43 +32,64 @@ class UserSpace {
     } else {
       const entropy = (await authUser(address)).slice(2, 34)
       const mnemonic = bip39.entropyToMnemonic(entropy)
-      const opts = {
+      muDID = await MuPort.newIdentity(null, null, {
         externalMgmtKey: address,
         mnemonic
-      }
-      muDID = await MuPort.newIdentity({name:"asdf"}, null, opts)
+      })
       store.set('serializedMuDID_' + address, muDID.serializeState())
     }
-    console.log(muDID.getDid())
-    return new UserSpace(muDID)
+    console.log('userspace opened with', muDID.getDid())
+    let userspace = new UserSpace(muDID)
+    await userspace.sync()
+    return userspace
   }
 
-  async getItems(opts = {}) {
-    // opts.page
-    // opts.numItems
+  async get (key) {
+    await this.sync()
+    return this.items[key]
+  }
+
+  async getAll () {
+    await this.sync()
+    return this.items
+  }
+
+  async set (key, value) {
+    await this.postEvent({ key, value })
+    return true
+  }
+
+  async remove (key) {
+    await this.postEvent({ key, deleted: true })
+    return true
+  }
+
+  async sync () {
     const authToken = await this.muDID.signJWT({ previous: null })
-    console.log(authToken)
-    //const ver = await this.muDID.verifyJWT(event_token)
-    //console.log(ver)
-    await request(CALEUCHE_URL, 'GET', authToken)
+    const events = (await request(CALEUCHE_URL, 'GET', authToken)).data.events
+
+    if (events.length > 0) {
+      this.previous = events[events.length - 1].hash
+      const items = events.map(event => {
+        const [ciphertext, nonce] = event.event.split('.')
+        const item = JSON.parse(this.muDID.symDecrypt(ciphertext, nonce))
+        if (item.key && item.value) {
+          this.items[item.key] = item.value
+        } else if (item.deleted && item.key) {
+          delete this.items[item.key]
+        }
+      })
+    }
   }
 
-  async addItem (item) {
-    const encrypted = this.muDID.symEncrypt(JSON.stringify(item))
-    console.log(encrypted)
+  async postEvent (payload) {
+    const encrypted = this.muDID.symEncrypt(JSON.stringify(payload))
     const event_token = await this.muDID.signJWT({
-      previous: null,
+      previous: this.previous,
       event: encrypted.ciphertext + '.' + encrypted.nonce
     })
-    console.log(event_token)
-    //const ver = await this.muDID.verifyJWT(event_token)
-    //console.log(ver)
-    //await request(CALEUCHE_URL, 'POST', {event_token: 'asdfasdf'})
-    await request(CALEUCHE_URL, 'POST', {event_token})
-    //await request(CALEUCHE_URL, 'GET', {event_token})
-  }
-
-  async removeItem (itemId) {
+    this.previous = (await request(CALEUCHE_URL, 'POST', {event_token})).data.id
+    console.log('added event with id', this.previous)
   }
 }
 module.exports = UserSpace
@@ -88,22 +113,19 @@ function authUser (from) {
 }
 
 function request (url, method, payload) {
-    console.log(url)
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest()
     request.onreadystatechange = () => {
-        console.log(request)
       if (request.readyState === 4 && request.timeout !== 1) {
         if (request.status !== 200) {
-          //console.log(request)
-          //reject(`[userspace] status ${request.status}: ${request.responseText}`)
+          console.log(request)
+          reject(request.responseText)
         } else {
-          //console.log(request)
-          //try {
-            //resolve(JSON.parse(request.responseText))
-          //} catch (jsonError) {
-            //reject(`[userspace] while parsing data: '${String(request.responseText)}', error: ${String(jsonError)}`)
-          //}
+          try {
+            resolve(JSON.parse(request.response))
+          } catch (jsonError) {
+            reject(`[userspace] while parsing data: '${String(request.responseText)}', error: ${String(jsonError)}`)
+          }
         }
       }
     }
